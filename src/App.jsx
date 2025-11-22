@@ -18,15 +18,20 @@ import {
   setDoc
 } from 'firebase/firestore';
 import { 
+  // 基礎圖示
   Star, CheckCircle2, XCircle, Trophy, BookOpen, BedDouble, 
   Trash2, Tv, Gamepad2, IceCream, Lock, History, PlusCircle, 
-  LogOut, BarChart3, Settings, Utensils, Shirt, Bike, Music, 
-  Smile, Gift, Users, User, Baby, Image as ImageIcon, 
-  AlertTriangle, Edit, Home
+  LogOut, BarChart3, Settings, Users, User, Baby, Image as ImageIcon, 
+  AlertTriangle, Edit, Home,
+  // 新增擴充圖示
+  Zap, Heart, Sun, Cloud, Umbrella, Hammer, Wrench, 
+  Car, Bus, Plane, Rocket, Calculator, Palette, Microscope, Globe,
+  Crown, Medal, Lightbulb, Puzzle, Flag, Music, Gift, Smile,
+  Utensils, Shirt, Bike, Apple,  Dna, GraduationCap, 
+  Drum, Headphones, Dumbbell, Footprints
 } from 'lucide-react';
 
 // --- Firebase Configuration ---
-// 您專屬的設定檔
 const firebaseConfig = {
   apiKey: "AIzaSyAta6sbY6lT9_uzcLY8any35w3dEmdPEzc",
   authDomain: "super-helper-v2.firebaseapp.com",
@@ -45,26 +50,35 @@ const appId = "my-family-app-v1";
 // --- Constants ---
 const DEFAULT_PIN = "1234";
 
+// 擴充後的圖示庫
 const ICON_MAP = {
-  'bed': BedDouble, 'book': BookOpen, 'clean': CheckCircle2,
-  'toy': Trophy, 'star': Star, 'tv': Tv,
-  'game': Gamepad2, 'food': IceCream, 'utensils': Utensils,
-  'shirt': Shirt, 'bike': Bike, 'music': Music,
-  'smile': Smile, 'gift': Gift,
+  // 日常
+  'bed': BedDouble, 'book': BookOpen, 'clean': CheckCircle2, 'shirt': Shirt, 'utensils': Utensils,
+  // 娛樂 & 獎勵
+  'tv': Tv, 'game': Gamepad2, 'food': IceCream, 'gift': Gift, 'toy': Trophy,
+  // 學習 & 才藝
+  'music': Music, 'drum': Drum, 'headphones': Headphones, 'palette': Palette, 'calculator': Calculator, 
+  'microscope': Microscope, 'globe': Globe, 'dna': Dna, 'grad': GraduationCap,
+  // 戶外 & 運動
+  'bike': Bike, 'car': Car, 'bus': Bus, 'plane': Plane, 'rocket': Rocket, 'dumbbell': Dumbbell, 'foot': Footprints,
+  // 其他酷東西
+  'star': Star, 'crown': Crown, 'medal': Medal, 'zap': Zap, 'heart': Heart, 'smile': Smile,
+  'sun': Sun, 'cloud': Cloud, 'umbrella': Umbrella, 'hammer': Hammer, 'wrench': Wrench, 
+  'bulb': Lightbulb, 'puzzle': Puzzle, 'flag': Flag, 'apple': Apple
 };
 
-const AVATAR_COLORS = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-orange-500', 'bg-purple-500', 'bg-teal-500', 'bg-rose-500'];
+const AVATAR_COLORS = ['bg-blue-500', 'bg-pink-500', 'bg-green-500', 'bg-orange-500', 'bg-purple-500', 'bg-teal-500', 'bg-rose-500', 'bg-indigo-500'];
 
-// --- Helper Component for Icons ---
+// --- Helper Component for Icons (修復圖示顯示問題) ---
 const DynamicIcon = ({ iconKey, size = 24, className = "" }) => {
   const IconComponent = ICON_MAP[iconKey] || Star;
+  // 確保回傳的是有效的 React Element
   return <IconComponent size={size} className={className} />;
 };
 
 // --- Components ---
 
 export default function SuperHelperApp() {
-  // 【關鍵修改】在程式啟動的第一瞬間，就去讀取記憶
   const storedFamilyId = localStorage.getItem('super_helper_family_id') || "";
 
   const [user, setUser] = useState(null);
@@ -72,7 +86,6 @@ export default function SuperHelperApp() {
   const [loading, setLoading] = useState(true);
 
   // State: Views & Logic
-  // 【關鍵修改】如果記憶中有代碼，直接將畫面設定為 'profile-select' (選人畫面)，跳過 'family-login'
   const [view, setView] = useState(storedFamilyId ? 'profile-select' : 'family-login'); 
   const [familyId, setFamilyId] = useState(storedFamilyId);
   const [tempFamilyId, setTempFamilyId] = useState("");
@@ -116,7 +129,6 @@ export default function SuperHelperApp() {
       if (u) {
         setUser(u);
         setLoading(false);
-        // 這裡不需要再手動切換 view，因為初始 state 已經處理好了
       }
     });
     return () => unsubscribe();
@@ -128,32 +140,27 @@ export default function SuperHelperApp() {
 
     const prefix = `${familyId}_`;
 
-    // Settings - 修正路徑為 6 段
     const settingsRef = doc(db, 'artifacts', appId, 'public', 'data', `${prefix}settings`, 'config');
     const unsubSettings = onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) setBgImage(docSnap.data().backgroundImage || "");
     });
 
-    // Activities
     const unsubActivities = onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', `${prefix}activities`), (snapshot) => {
         const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         setActivities(data);
     });
 
-    // Tasks
     const tasksRef = collection(db, 'artifacts', appId, 'public', 'data', `${prefix}tasks`);
     const unsubTasks = onSnapshot(tasksRef, (snapshot) => {
       setTasks(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    // Rewards
     const rewardsRef = collection(db, 'artifacts', appId, 'public', 'data', `${prefix}rewards`);
     const unsubRewards = onSnapshot(rewardsRef, (snapshot) => {
       setRewards(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    // Children
     const childrenRef = collection(db, 'artifacts', appId, 'public', 'data', `${prefix}children`);
     const unsubChildren = onSnapshot(childrenRef, (snapshot) => {
       setChildren(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -167,7 +174,6 @@ export default function SuperHelperApp() {
   const handleFamilyLogin = () => {
     if (!tempFamilyId.trim()) return alert("請輸入家庭代碼");
     const code = tempFamilyId.trim();
-    // 【關鍵】登入成功時，立刻存入手機記憶體
     localStorage.setItem('super_helper_family_id', code);
     setFamilyId(code);
     setView('profile-select');
@@ -175,7 +181,6 @@ export default function SuperHelperApp() {
 
   const handleLogoutFamily = () => {
     if(confirm("確定要登出家庭嗎？需要重新輸入代碼才能登入。")) {
-      // 【關鍵】登出時，清除記憶
       localStorage.removeItem('super_helper_family_id');
       setFamilyId("");
       setView('family-login');
@@ -224,13 +229,12 @@ export default function SuperHelperApp() {
 
   const handleDeleteConfigItem = async (collectionName, id) => {
     if (!user || !familyId) return;
-    if(confirm("確定刪除？")) {
+    if(confirm("確定要刪除這個項目嗎？")) {
        const prefix = `${familyId}_`;
        await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `${prefix}${collectionName}`, id));
     }
   };
 
-  // Basic Ops
   const handleSaveBg = async () => {
     if (!user || !familyId) return;
     const prefix = `${familyId}_`;
@@ -261,6 +265,12 @@ export default function SuperHelperApp() {
       const prefix = `${familyId}_`;
       await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `${prefix}children`, id)); 
     }
+  };
+
+  const handleSelectChild = (child) => {
+    // 修復：確保狀態正確更新後才切換視圖
+    setSelectedChild(child); 
+    setView('child');
   };
 
   const handleSubmitActivity = async (title, points, type) => {
@@ -298,7 +308,7 @@ export default function SuperHelperApp() {
 
   if (loading) return <div className="min-h-screen flex justify-center items-center bg-yellow-50 text-xl font-bold text-yellow-600">載入中...</div>;
 
-  // VIEW: Family Login (First time sync)
+  // VIEW: Family Login
   if (!familyId || view === 'family-login') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-yellow-50 font-sans">
@@ -306,19 +316,18 @@ export default function SuperHelperApp() {
           <div className="mx-auto bg-yellow-100 w-20 h-20 rounded-full flex items-center justify-center text-yellow-600 mb-6">
             <Home size={40} />
           </div>
-          <h1 className="text-2xl font-bold text-gray-800 mb-2">歡迎使用超級好幫手</h1>
-          <p className="text-gray-500 mb-8">請輸入「家庭代碼」來同步所有裝置的資料。</p>
+          {/* 修正：標題改為 "小朋友集點卡" */}
+          <h1 className="text-3xl font-bold text-gray-800 mb-2">小朋友集點卡</h1>
+          <p className="text-gray-500 mb-8">請輸入「家庭代碼」同步資料</p>
           
           <div className="mb-6">
-            <label className="block text-left text-gray-700 font-bold mb-2 text-sm">家庭代碼 (自訂)</label>
             <input 
               type="text" 
               value={tempFamilyId} 
               onChange={e => setTempFamilyId(e.target.value)} 
-              placeholder="例如: WangFamily2024" 
-              className="w-full border-2 border-yellow-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-yellow-500 transition"
+              placeholder="輸入家庭代碼 (例: LoveFamily)" 
+              className="w-full border-2 border-yellow-300 rounded-xl px-4 py-3 text-lg focus:outline-none focus:border-yellow-500 transition text-center"
             />
-            <p className="text-xs text-gray-400 text-left mt-2">* 請在每台手機/平板輸入完全一樣的代碼</p>
           </div>
           
           <button onClick={handleFamilyLogin} className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-4 rounded-xl text-lg shadow-md transition transform active:scale-95">
@@ -340,36 +349,39 @@ export default function SuperHelperApp() {
     }}>
       <div className={`min-h-screen transition-colors duration-500 ${bgImage ? 'bg-white/85' : (view.includes('parent') ? 'bg-gray-100' : 'bg-yellow-50')}`}>
         
-        {/* VIEW: Profile Select */}
+        {/* VIEW: Profile Select (修正：全版置中) */}
         {view === 'profile-select' && (
-          <div className="flex flex-col items-center justify-center p-8 font-sans min-h-screen w-full">
+          <div className="flex flex-col items-center justify-center min-h-screen w-full px-4 py-10">
             <h1 className="text-4xl font-bold text-yellow-800 mb-4 drop-shadow-sm">你是誰？</h1>
             <p className="text-yellow-700/60 mb-10 font-bold bg-yellow-100/50 px-4 py-1 rounded-full">家庭: {familyId}</p>
             
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-8 w-full max-w-6xl mb-12 place-items-center">
+            {/* 修正：使用 flex-wrap 和 justify-center 確保 iPad 置中 */}
+            <div className="flex flex-wrap justify-center gap-8 w-full max-w-6xl mb-12">
               {children.map(child => (
-                <button key={child.id} onClick={() => handleSelectChild(child)} className="w-full aspect-square bg-white/90 p-6 rounded-[2.5rem] shadow-xl hover:scale-105 transition transform flex flex-col items-center justify-center gap-4 backdrop-blur-sm group">
-                  <div className={`w-24 h-24 rounded-full ${child.color || 'bg-blue-500'} flex items-center justify-center text-white shadow-inner group-hover:ring-4 ring-yellow-200 transition-all`}>
-                    <User size={48} />
+                <button 
+                  key={child.id} 
+                  onClick={() => handleSelectChild(child)} 
+                  className="w-40 h-40 md:w-48 md:h-48 bg-white/90 p-4 rounded-[2.5rem] shadow-xl hover:scale-105 transition transform flex flex-col items-center justify-center gap-3 backdrop-blur-sm group cursor-pointer"
+                >
+                  <div className={`w-20 h-20 md:w-24 md:h-24 rounded-full ${child.color || 'bg-blue-500'} flex items-center justify-center text-white shadow-inner group-hover:ring-4 ring-yellow-200 transition-all`}>
+                    <User size={40} className="md:w-12 md:h-12" />
                   </div>
-                  <span className="text-2xl font-bold text-gray-700">{child.name}</span>
-                  <span className="text-lg bg-yellow-100 text-yellow-700 px-4 py-1 rounded-full font-black">${getChildBalance(child.id)}</span>
+                  <span className="text-xl md:text-2xl font-bold text-gray-700 truncate w-full text-center">{child.name}</span>
+                  <span className="text-sm bg-yellow-100 text-yellow-700 px-3 py-0.5 rounded-full font-black">${getChildBalance(child.id)}</span>
                 </button>
               ))}
               
               {children.length === 0 && (
-                 <div className="col-span-2 md:col-span-3 text-center text-gray-400 py-10 bg-white/40 rounded-3xl border-4 border-dashed border-gray-300 w-full">
+                 <div className="w-full max-w-md text-center text-gray-400 py-10 bg-white/40 rounded-3xl border-4 border-dashed border-gray-300">
                    <p className="text-xl">還沒有建立小朋友檔案</p>
                    <p className="text-sm mt-2">請點擊下方「家長專區」設定</p>
                  </div>
               )}
             </div>
 
-            <div className="flex gap-4">
-              <button onClick={() => setView('login')} className="flex items-center text-gray-600 font-bold bg-white/80 px-8 py-4 rounded-full hover:bg-white shadow-md transition backdrop-blur-sm text-lg">
-                <Lock size={20} className="mr-2" /> 家長專區
-              </button>
-            </div>
+            <button onClick={() => setView('login')} className="flex items-center text-gray-600 font-bold bg-white/80 px-8 py-4 rounded-full hover:bg-white shadow-md transition backdrop-blur-sm text-lg">
+              <Lock size={20} className="mr-2" /> 家長專區
+            </button>
           </div>
         )}
 
@@ -380,7 +392,15 @@ export default function SuperHelperApp() {
               <button onClick={() => setView('profile-select')} className="absolute top-6 left-6 text-gray-400 hover:text-gray-600"><LogOut/></button>
               <div className="mx-auto bg-indigo-100 w-16 h-16 rounded-full flex items-center justify-center text-indigo-600 mb-4"><Lock size={32} /></div>
               <h2 className="text-2xl font-bold text-gray-800 mb-6">家長專區</h2>
-              <input type="password" value={pinInput} onChange={(e) => setPinInput(e.target.value)} maxLength={4} className="text-center text-4xl tracking-widest w-40 border-b-2 border-indigo-300 mb-6 outline-none py-2 bg-transparent" placeholder="••••"/>
+              {/* 修正：密碼輸入框顯示圓點 */}
+              <input 
+                type="password" 
+                value={pinInput} 
+                onChange={(e) => setPinInput(e.target.value)} 
+                maxLength={4} 
+                className="text-center text-4xl tracking-widest w-full border-b-2 border-indigo-300 mb-6 outline-none py-2 bg-transparent text-gray-800 font-mono" 
+                placeholder="••••"
+              />
               {errorMsg && <p className="text-red-500 mb-4">{errorMsg}</p>}
               <button onClick={handleParentLogin} className="w-full py-3 rounded-xl bg-indigo-600 text-white font-bold shadow-lg hover:bg-indigo-700 transition">進入</button>
             </div>
@@ -390,7 +410,7 @@ export default function SuperHelperApp() {
         {/* VIEW: Child Stats & Main */}
         {(view === 'child' || view === 'child-stats') && selectedChild && (
           <div className="pb-20 font-sans min-h-screen w-full max-w-6xl mx-auto">
-             {/* Top Bar for Child */}
+             {/* Top Bar */}
              {view === 'child' && (
                <div className="bg-yellow-400/90 backdrop-blur-md p-6 rounded-b-[3rem] shadow-lg text-center relative mb-8">
                   <div className="absolute top-6 left-6 flex gap-3">
@@ -409,7 +429,7 @@ export default function SuperHelperApp() {
              
              {/* Stats View */}
              {view === 'child-stats' && (
-               <div className="p-4">
+               <div className="p-4 w-full max-w-3xl mx-auto">
                   <div className={`${selectedChild.color} p-6 text-white rounded-3xl shadow-lg mb-6 relative`}>
                     <button onClick={() => setView('child')} className="absolute top-6 left-6 bg-white/20 p-2 rounded-full"><LogOut size={20}/></button>
                     <h1 className="text-2xl font-bold text-center">{selectedChild.name} 的紀錄</h1>
@@ -435,17 +455,18 @@ export default function SuperHelperApp() {
                </div>
              )}
 
-             {/* Main Actions */}
+             {/* Main Actions (修正：滿版與置中) */}
              {view === 'child' && (
-                <div className="mt-16 px-6">
+                <div className="mt-16 px-6 w-full">
                   <h2 className="text-2xl font-bold text-yellow-800 mb-6 flex items-center"><PlusCircle className="mr-2" /> 賺取金幣</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
+                  {/* 修正：使用 grid-cols-auto-fill 讓卡片自動填滿寬度 */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-10">
                     {tasks.map(task => (
-                      <button key={task.id} onClick={() => handleSubmitActivity(task.title, task.points || task.cost, 'earn')} className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-md border-b-4 border-yellow-200 active:translate-y-1 active:border-b-0 transition flex flex-col items-center gap-3 hover:bg-yellow-50 group">
+                      <button key={task.id} onClick={() => handleSubmitActivity(task.title, task.points || task.cost, 'earn')} className="bg-white/90 backdrop-blur-sm p-6 rounded-3xl shadow-md border-b-4 border-yellow-200 active:translate-y-1 active:border-b-0 transition flex flex-col items-center gap-3 hover:bg-yellow-50 group cursor-pointer">
                         <div className="text-yellow-600 bg-yellow-100 p-4 rounded-full group-hover:scale-110 transition">
-                          <DynamicIcon iconKey={task.iconKey} size={24} />
+                          <DynamicIcon iconKey={task.iconKey} size={32} />
                         </div>
-                        <span className="font-bold text-gray-700 text-lg">{task.title}</span>
+                        <span className="font-bold text-gray-700 text-lg text-center leading-tight">{task.title}</span>
                         <span className="text-lg font-black text-yellow-600">+{task.points || task.cost}</span>
                       </button>
                     ))}
@@ -453,14 +474,14 @@ export default function SuperHelperApp() {
                   </div>
 
                   <h2 className="text-2xl font-bold text-indigo-800 mb-6 flex items-center"><IceCream className="mr-2" /> 兌換禮物</h2>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mb-10">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6 mb-10">
                     {rewards.map(reward => (
                       <button key={reward.id} onClick={() => handleSubmitActivity(reward.title, reward.cost || reward.points, 'spend')} disabled={getChildBalance(selectedChild.id) < (reward.cost || reward.points)} 
-                        className={`p-6 rounded-3xl shadow-md border-b-4 active:translate-y-1 active:border-b-0 transition flex flex-col items-center gap-3 backdrop-blur-sm ${getChildBalance(selectedChild.id) >= (reward.cost || reward.points) ? 'bg-white/90 border-indigo-200 hover:bg-indigo-50' : 'bg-gray-100/80 border-gray-300 opacity-70 cursor-not-allowed'}`}>
+                        className={`p-6 rounded-3xl shadow-md border-b-4 active:translate-y-1 active:border-b-0 transition flex flex-col items-center gap-3 backdrop-blur-sm cursor-pointer ${getChildBalance(selectedChild.id) >= (reward.cost || reward.points) ? 'bg-white/90 border-indigo-200 hover:bg-indigo-50' : 'bg-gray-100/80 border-gray-300 opacity-70 cursor-not-allowed'}`}>
                         <div className={`p-4 rounded-full ${getChildBalance(selectedChild.id) >= (reward.cost || reward.points) ? 'text-indigo-600 bg-indigo-100' : 'text-gray-400 bg-gray-200'}`}>
-                          <DynamicIcon iconKey={reward.iconKey} size={24} />
+                          <DynamicIcon iconKey={reward.iconKey} size={32} />
                         </div>
-                        <span className="font-bold text-gray-700 text-lg">{reward.title}</span>
+                        <span className="font-bold text-gray-700 text-lg text-center leading-tight">{reward.title}</span>
                         <span className="text-lg font-black text-indigo-600">-{reward.cost || reward.points}</span>
                       </button>
                     ))}
@@ -506,11 +527,11 @@ export default function SuperHelperApp() {
 
               {/* Edit Form */}
               <div className={`fixed inset-0 bg-black/50 flex items-center justify-center z-50 ${editingItem ? 'block' : 'hidden'}`}>
-                <div className="bg-white p-6 rounded-3xl w-full max-w-md mx-4 shadow-2xl">
+                <div className="bg-white p-6 rounded-3xl w-full max-w-md mx-4 shadow-2xl max-h-[90vh] overflow-y-auto">
                   <h3 className="text-xl font-bold mb-4 text-gray-800">編輯項目</h3>
                   <div className="mb-4">
                     <label className="block text-sm font-bold text-gray-500 mb-1">圖示</label>
-                    <div className="flex gap-2 overflow-x-auto pb-2">
+                    <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border rounded-xl">
                       {Object.keys(ICON_MAP).map(k => (
                         <button key={k} onClick={() => setNewItemIcon(k)} className={`p-3 rounded-xl border-2 transition ${newItemIcon === k ? 'border-indigo-500 bg-indigo-50' : 'border-transparent bg-gray-50'}`}>
                           <DynamicIcon iconKey={k} size={24} />
@@ -541,7 +562,8 @@ export default function SuperHelperApp() {
                     <div key={task.id} className="p-3 bg-gray-50 rounded-2xl flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <div className="text-yellow-600 bg-white p-2 rounded-full shadow-sm">
-                          <DynamicIcon iconKey={task.iconKey} size={16} />
+                          {/* 修正：使用 DynamicIcon */}
+                          <DynamicIcon iconKey={task.iconKey} size={24} />
                         </div>
                         <div><p className="font-bold text-gray-800">{task.title}</p><p className="text-xs text-gray-500">+{task.points || task.cost} 分</p></div>
                       </div>
@@ -552,11 +574,10 @@ export default function SuperHelperApp() {
                     </div>
                   ))}
                 </div>
-                {/* Add New Task Area */}
-                <div className="bg-gray-50 p-4 rounded-2xl border-2 border-dashed border-gray-200">
-                  <p className="text-xs font-bold text-gray-400 mb-2 uppercase">新增任務</p>
-                  <div className="flex gap-2 mb-3 overflow-x-auto">{Object.keys(ICON_MAP).slice(0,6).map(k => (<button key={k} onClick={() => setNewItemIcon(k)} className={`p-2 rounded-lg border ${newItemIcon === k ? 'bg-yellow-100 border-yellow-400' : 'bg-white border-gray-200'}`}><DynamicIcon iconKey={k} size={20}/></button>))}</div>
-                  <div className="flex gap-2"><input type="text" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="名稱" className="flex-1 border rounded-lg px-3 py-2"/><input type="number" value={newItemPoints} onChange={e => setNewItemPoints(e.target.value)} placeholder="分" className="w-20 border rounded-lg px-3 py-2"/><button onClick={() => handleSaveItem('tasks')} className="bg-indigo-600 text-white px-4 rounded-lg font-bold">新增</button></div>
+                <div className="text-center">
+                   <button onClick={() => { setEditingItem({}); setNewItemName(""); setNewItemPoints(""); }} className="bg-indigo-50 text-indigo-600 px-6 py-3 rounded-xl font-bold w-full border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition">
+                     + 新增任務
+                   </button>
                 </div>
               </div>
 
@@ -568,7 +589,8 @@ export default function SuperHelperApp() {
                     <div key={reward.id} className="p-3 bg-gray-50 rounded-2xl flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <div className="text-indigo-600 bg-white p-2 rounded-full shadow-sm">
-                          <DynamicIcon iconKey={reward.iconKey} size={16} />
+                          {/* 修正：使用 DynamicIcon */}
+                          <DynamicIcon iconKey={reward.iconKey} size={24} />
                         </div>
                         <div><p className="font-bold text-gray-800">{reward.title}</p><p className="text-xs text-gray-500">-{reward.cost || reward.points} 分</p></div>
                       </div>
@@ -579,11 +601,10 @@ export default function SuperHelperApp() {
                     </div>
                   ))}
                 </div>
-                {/* Add New Reward Area */}
-                <div className="bg-gray-50 p-4 rounded-2xl border-2 border-dashed border-gray-200">
-                  <p className="text-xs font-bold text-gray-400 mb-2 uppercase">新增獎勵</p>
-                  <div className="flex gap-2 mb-3 overflow-x-auto">{Object.keys(ICON_MAP).slice(5).map(k => (<button key={k} onClick={() => setNewItemIcon(k)} className={`p-2 rounded-lg border ${newItemIcon === k ? 'bg-indigo-100 border-indigo-400' : 'bg-white border-gray-200'}`}><DynamicIcon iconKey={k} size={20}/></button>))}</div>
-                  <div className="flex gap-2"><input type="text" value={newItemName} onChange={e => setNewItemName(e.target.value)} placeholder="名稱" className="flex-1 border rounded-lg px-3 py-2"/><input type="number" value={newItemPoints} onChange={e => setNewItemPoints(e.target.value)} placeholder="分" className="w-20 border rounded-lg px-3 py-2"/><button onClick={() => handleSaveItem('rewards')} className="bg-indigo-600 text-white px-4 rounded-lg font-bold">新增</button></div>
+                <div className="text-center">
+                   <button onClick={() => { setEditingItem({cost:0}); setNewItemName(""); setNewItemPoints(""); }} className="bg-indigo-50 text-indigo-600 px-6 py-3 rounded-xl font-bold w-full border-2 border-dashed border-indigo-200 hover:bg-indigo-100 transition">
+                     + 新增獎勵
+                   </button>
                 </div>
               </div>
 
